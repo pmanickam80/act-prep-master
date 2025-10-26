@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { skills, difficulty, numQuestions } = req.body;
+  const { section = 'english', skills, difficulty, numQuestions } = req.body;
 
   // List of varied topics to ensure uniqueness
   const topics = [
@@ -58,28 +58,81 @@ export default async function handler(req, res) {
   const randomTopic = topics[Math.floor(Math.random() * topics.length)];
   const timestamp = Date.now();
 
-  // Map skill names to descriptions
+  // Map skill names to descriptions based on section
   const skillDescriptions = {
+    // English skills
     'punctuation': 'comma usage, semicolons, colons, apostrophes',
     'verb-tense': 'verb tense consistency, subject-verb agreement, perfect tenses',
     'sentence-flow': 'transitions, logical connectors, sentence ordering',
     'wordiness': 'concision, eliminating redundancy, avoiding wordy phrases',
     'grammar': 'pronoun usage, parallel structure, modifiers',
-    'style': 'tone consistency, formal language, word choice'
+    'style': 'tone consistency, formal language, word choice',
+    // Math skills
+    'algebra': 'solving equations, inequalities, systems of equations',
+    'geometry': 'area, perimeter, volume, angles, coordinate geometry',
+    'trigonometry': 'sine, cosine, tangent, trigonometric identities',
+    'statistics': 'mean, median, mode, probability, data interpretation',
+    // Reading skills
+    'main-idea': 'identifying central themes and main arguments',
+    'inference': 'drawing conclusions from context and implied information',
+    'vocabulary': 'understanding word meanings in context',
+    'detail-comprehension': 'finding and understanding specific information',
+    'tone-purpose': 'identifying author tone and purpose',
+    // Science skills
+    'data-interpretation': 'analyzing graphs, charts, and tables',
+    'scientific-method': 'understanding experimental procedures',
+    'hypothesis-testing': 'evaluating hypotheses and predictions',
+    'experimental-design': 'identifying controls and variables',
+    'graph-analysis': 'interpreting scientific graphs and trends'
   };
 
   const selectedSkills = skills.map(s => skillDescriptions[s] || s).join(', ');
 
-  const prompt = `Generate an ACT English practice passage with ${numQuestions} questions.
+  // Generate section-specific prompt
+  let prompt;
+
+  if (section === 'math') {
+    prompt = `Generate ${numQuestions} ACT Math practice questions.
+
+SKILLS: ${selectedSkills}
+DIFFICULTY: ${difficulty}
+
+Create ${numQuestions} math problems covering ${selectedSkills}.
+Include step-by-step solutions in explanations.`;
+
+  } else if (section === 'reading') {
+    prompt = `Generate an ACT Reading comprehension passage with ${numQuestions} questions.
+
+TOPIC: ${randomTopic}
+SKILLS: ${selectedSkills}
+DIFFICULTY: ${difficulty}
+
+Create a 500-word passage about ${randomTopic} followed by ${numQuestions} comprehension questions.`;
+
+  } else if (section === 'science') {
+    prompt = `Generate an ACT Science reasoning passage with ${numQuestions} questions.
+
+TOPIC: Scientific experiment or data about ${randomTopic}
+SKILLS: ${selectedSkills}
+DIFFICULTY: ${difficulty}
+
+Create a scientific data passage with graphs/tables about ${randomTopic} followed by ${numQuestions} data interpretation questions.`;
+
+  } else {
+    // Default to English
+    prompt = `Generate an ACT English practice passage with ${numQuestions} questions.
 
 TOPIC: ${randomTopic}
 SKILLS: ${selectedSkills}
 DIFFICULTY: ${difficulty}
 
 Create a 400-word passage about ${randomTopic} with ${numQuestions} underlined portions testing the specified skills.
-Format: <span class="underlined" data-question="1">text</span>
+Format: <span class="underlined" data-question="1">text</span>`;
+  }
 
-IMPORTANT: Be concise and focus on quality over length.
+  prompt += `
+
+IMPORTANT: Be concise and focus on quality.
 
 Return ONLY a valid JSON object (no markdown, no extra text) with this structure:
 {

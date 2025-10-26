@@ -4,14 +4,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { storage } from '../utils/storage';
 
-export default function EnglishPractice({ user, globalStats, updateStats }) {
+export default function MathPractice({ user, globalStats, updateStats }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [userAnswers, setUserAnswers] = useState({});
   const [showResults, setShowResults] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(45 * 60); // 45 minutes
+  const [timeRemaining, setTimeRemaining] = useState(60 * 60); // 60 minutes
   const [isPaused, setIsPaused] = useState(false);
   const [sessionStartTime, setSessionStartTime] = useState(null);
   const timerRef = useRef(null);
@@ -50,31 +50,20 @@ export default function EnglishPractice({ user, globalStats, updateStats }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          skills: ['punctuation', 'verb-tense', 'sentence-flow', 'wordiness'],
+          section: 'math',
+          skills: ['algebra', 'geometry', 'trigonometry', 'statistics'],
           difficulty: 'medium',
-          numQuestions: 15
+          numQuestions: 20
         })
       });
 
       const data = await response.json();
-
-      if (data.error) {
-        alert(`Error generating questions: ${data.message || 'Please try again'}`);
-        setLoading(false);
-        return;
-      }
-
-      if (data.passage && data.questions) {
+      if (!data.error) {
         setQuestions(data);
-        setCurrentQuestion(0);
-        setUserAnswers({});
-      } else {
-        alert('Invalid response format. Please try again.');
-        setLoading(false);
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Failed to generate questions. Please check your internet connection and try again.');
+    } finally {
       setLoading(false);
     }
   };
@@ -96,14 +85,14 @@ export default function EnglishPractice({ user, globalStats, updateStats }) {
   const handleSubmit = () => {
     const totalQuestions = questions.questions.length;
     const correctAnswers = Object.values(userAnswers).filter(a => a.isCorrect).length;
-    const timeTaken = (45 * 60) - timeRemaining;
+    const timeTaken = (60 * 60) - timeRemaining;
 
     // Calculate XP earned
     const xpEarned = Math.floor((correctAnswers / totalQuestions) * 50) + 10;
 
     // Save practice session to storage
     storage.savePracticeSession({
-      section: 'english',
+      section: 'math',
       totalQuestions,
       correctAnswers,
       timeTaken,
@@ -130,11 +119,11 @@ export default function EnglishPractice({ user, globalStats, updateStats }) {
   };
 
   const getMotivationalMessage = (percentage) => {
-    if (percentage >= 90) return "Outstanding! You're ACT ready! 🌟";
-    if (percentage >= 80) return "Excellent work! Keep it up! 🎯";
-    if (percentage >= 70) return "Good job! You're improving! 💪";
-    if (percentage >= 60) return "Nice effort! Keep practicing! 📚";
-    return "Keep working hard! Every practice counts! 🚀";
+    if (percentage >= 90) return "Outstanding! You're a math wizard! 🌟";
+    if (percentage >= 80) return "Excellent work! Strong mathematical skills! 🎯";
+    if (percentage >= 70) return "Good job! Your calculations are improving! 💪";
+    if (percentage >= 60) return "Nice effort! Keep practicing those formulas! 📚";
+    return "Keep working hard! Math mastery takes practice! 🚀";
   };
 
   if (!user) {
@@ -160,15 +149,16 @@ export default function EnglishPractice({ user, globalStats, updateStats }) {
     return (
       <>
         <Head>
-          <title>English Practice Results - ACT Prep Master</title>
+          <title>Math Practice Results - ACT Prep Master</title>
         </Head>
 
         <nav className="nav">
           <div className="nav-container">
             <Link href="/" className="nav-brand">🎯 ACT Prep Master</Link>
-            <ul className="nav-menu">
-              <li><Link href="/" className="nav-link">Home</Link></li>
-            </ul>
+            <div className="nav-menu">
+              <Link href="/" className="nav-link">Home</Link>
+              <Link href="/progress" className="nav-link">Progress</Link>
+            </div>
           </div>
         </nav>
 
@@ -192,7 +182,7 @@ export default function EnglishPractice({ user, globalStats, updateStats }) {
                 <div className="stat-label">Correct</div>
               </div>
               <div className="stat-card">
-                <div className="stat-value">{formatTime((45 * 60) - timeRemaining)}</div>
+                <div className="stat-value">{formatTime((60 * 60) - timeRemaining)}</div>
                 <div className="stat-label">Time Taken</div>
               </div>
               <div className="stat-card">
@@ -218,7 +208,7 @@ export default function EnglishPractice({ user, globalStats, updateStats }) {
   return (
     <>
       <Head>
-        <title>English Practice - ACT Prep Master</title>
+        <title>Math Practice - ACT Prep Master</title>
       </Head>
 
       <nav className="nav">
@@ -248,18 +238,18 @@ export default function EnglishPractice({ user, globalStats, updateStats }) {
       <div className="container">
         {!questions ? (
           <div className="card" style={{ textAlign: 'center', marginTop: '4rem' }}>
-            <h1>English Practice Test 📝</h1>
+            <h1>Mathematics Practice Test 🔢</h1>
             <p style={{ fontSize: '1.2rem', color: '#718096', margin: '2rem 0' }}>
-              Test your grammar, punctuation, and writing skills
+              Test your algebra, geometry, trigonometry, and statistics skills
             </p>
 
             <div className="stats-grid" style={{ marginBottom: '2rem' }}>
               <div className="stat-card">
-                <div className="stat-value">15</div>
+                <div className="stat-value">20</div>
                 <div className="stat-label">Questions</div>
               </div>
               <div className="stat-card">
-                <div className="stat-value">45</div>
+                <div className="stat-value">60</div>
                 <div className="stat-label">Minutes</div>
               </div>
               <div className="stat-card">
@@ -274,53 +264,12 @@ export default function EnglishPractice({ user, globalStats, updateStats }) {
               disabled={loading}
               style={{ fontSize: '1.2rem', padding: '15px 40px' }}
             >
-              {loading ? (
-                <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span className="spinner"></span>
-                  Generating Questions... Please wait
-                </span>
-              ) : (
-                'Start Practice Test'
-              )}
+              {loading ? 'Generating Questions...' : 'Start Practice Test'}
             </button>
-
-            {loading && (
-              <div style={{ marginTop: '2rem', color: '#64748b' }}>
-                <p>🔄 Creating unique ACT practice questions tailored for you...</p>
-                <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>This may take 10-15 seconds</p>
-              </div>
-            )}
           </div>
         ) : (
           <div className="question-container">
-            <div className="passage-section">
-              <h3>📖 Reading Passage</h3>
-              <div className="passage-text" dangerouslySetInnerHTML={{ __html: questions.passage }} />
-
-              {/* Progress indicator */}
-              <div style={{ marginTop: '2rem', padding: '1rem', background: '#f7fafc', borderRadius: '8px' }}>
-                <div style={{ fontSize: '0.9rem', color: '#718096', marginBottom: '0.5rem' }}>
-                  Questions Answered: {Object.keys(userAnswers).length} / {questions.questions.length}
-                </div>
-                <div className="progress" style={{ height: '8px' }}>
-                  <div
-                    className="progress-bar"
-                    style={{
-                      width: `${(Object.keys(userAnswers).length / questions.questions.length) * 100}%`,
-                      background: Object.keys(userAnswers).length === questions.questions.length ? '#48bb78' : '#667eea'
-                    }}
-                  />
-                </div>
-                {Object.keys(userAnswers).length >= Math.floor(questions.questions.length / 2) &&
-                  Object.keys(userAnswers).length < questions.questions.length && (
-                  <div style={{ marginTop: '0.5rem', color: '#667eea', fontSize: '0.9rem', fontWeight: '600' }}>
-                    Great progress! Keep going! 💪
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="questions-section">
+            <div className="questions-section" style={{ maxWidth: '800px', margin: '0 auto' }}>
               <div style={{ marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                   <h3>📝 Question {currentQuestion + 1} of {questions.questions.length}</h3>
@@ -343,11 +292,11 @@ export default function EnglishPractice({ user, globalStats, updateStats }) {
                         width: '32px',
                         height: '32px',
                         borderRadius: '50%',
-                        border: index === currentQuestion ? '2px solid #667eea' : '1px solid #e2e8f0',
+                        border: index === currentQuestion ? '2px solid #2563eb' : '1px solid #e2e8f0',
                         background: userAnswers[index + 1]
-                          ? userAnswers[index + 1].isCorrect ? '#48bb78' : '#f56565'
-                          : index === currentQuestion ? '#667eea' : 'white',
-                        color: userAnswers[index + 1] || index === currentQuestion ? 'white' : '#718096',
+                          ? userAnswers[index + 1].isCorrect ? '#16a34a' : '#dc2626'
+                          : index === currentQuestion ? '#2563eb' : 'white',
+                        color: userAnswers[index + 1] || index === currentQuestion ? 'white' : '#64748b',
                         fontSize: '0.8rem',
                         cursor: 'pointer',
                         transition: 'all 0.2s'
@@ -365,7 +314,15 @@ export default function EnglishPractice({ user, globalStats, updateStats }) {
                   style={{ display: index === currentQuestion ? 'block' : 'none' }}
                 >
                   <div className="card">
-                    <h4 style={{ marginBottom: '1.5rem' }}>{question.text}</h4>
+                    {question.image && (
+                      <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+                        <img src={question.image} alt="Math problem" style={{ maxWidth: '100%', height: 'auto' }} />
+                      </div>
+                    )}
+
+                    <h4 style={{ marginBottom: '1.5rem', fontSize: '1.1rem', lineHeight: '1.6' }}>
+                      {question.text}
+                    </h4>
 
                     {question.options.map((option, optIndex) => {
                       const answered = userAnswers[question.id];
@@ -393,7 +350,7 @@ export default function EnglishPractice({ user, globalStats, updateStats }) {
                       <div style={{
                         marginTop: '1rem',
                         padding: '1rem',
-                        background: userAnswers[question.id].isCorrect ? '#d4edda' : '#f8d7da',
+                        background: userAnswers[question.id].isCorrect ? '#dcfce7' : '#fee2e2',
                         borderRadius: '8px'
                       }}>
                         {question.explanation}
