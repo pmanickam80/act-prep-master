@@ -78,9 +78,9 @@ DIFFICULTY: ${difficulty}
 UNIQUE SEED: ${timestamp}
 
 Requirements:
-1. Create a coherent, engaging passage (350-400 words) about ${randomTopic}
-2. The passage MUST be completely original and different from any previous generation
-3. Include exactly ${numQuestions} numbered underlined portions for questions
+1. Create a coherent, engaging passage (450-500 words) about ${randomTopic}
+2. The passage MUST be completely original, detailed, and comprehensive
+3. Include exactly ${numQuestions} numbered underlined portions for questions evenly distributed throughout the passage
 4. Each underlined portion should test the specified skills
 5. Format underlined portions as: <span class="underlined" data-question="1">text here</span>
 6. Create multiple-choice questions with 4 options each (A-D)

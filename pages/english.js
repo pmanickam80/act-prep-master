@@ -196,16 +196,23 @@ export default function EnglishPractice({ user, globalStats, updateStats }) {
       <nav className="nav">
         <div className="nav-container">
           <Link href="/" className="nav-brand">🎯 ACT Prep Master</Link>
-          <div className="timer" className={timeRemaining < 300 ? 'timer danger' : timeRemaining < 600 ? 'timer warning' : 'timer'}>
-            <span>⏱️</span>
-            <span className="timer-display">{formatTime(timeRemaining)}</span>
-            <button
-              className="btn btn-outline"
-              style={{ padding: '6px 12px', fontSize: '0.9rem' }}
-              onClick={() => setIsPaused(!isPaused)}
-            >
-              {isPaused ? '▶️ Resume' : '⏸️ Pause'}
-            </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+            <div className={timeRemaining < 300 ? 'timer danger' : timeRemaining < 600 ? 'timer warning' : 'timer'}>
+              <span>⏱️</span>
+              <span className="timer-display">{formatTime(timeRemaining)}</span>
+              <button
+                className="btn btn-outline"
+                style={{ padding: '6px 12px', fontSize: '0.9rem', marginLeft: '10px' }}
+                onClick={() => setIsPaused(!isPaused)}
+              >
+                {isPaused ? '▶️ Resume' : '⏸️ Pause'}
+              </button>
+            </div>
+            <Link href="/">
+              <button className="btn btn-outline">
+                🏠 Home
+              </button>
+            </Link>
           </div>
         </div>
       </nav>
@@ -245,31 +252,69 @@ export default function EnglishPractice({ user, globalStats, updateStats }) {
         ) : (
           <div className="question-container">
             <div className="passage-section">
-              <h3>Passage</h3>
-              <div
-                className="passage-text"
-                dangerouslySetInnerHTML={{ __html: questions.passage }}
-                style={{ lineHeight: '1.8', fontSize: '1.1rem' }}
-              />
+              <h3>📖 Reading Passage</h3>
+              <div className="passage-text" dangerouslySetInnerHTML={{ __html: questions.passage }} />
+
+              {/* Progress indicator */}
+              <div style={{ marginTop: '2rem', padding: '1rem', background: '#f7fafc', borderRadius: '8px' }}>
+                <div style={{ fontSize: '0.9rem', color: '#718096', marginBottom: '0.5rem' }}>
+                  Questions Answered: {Object.keys(userAnswers).length} / {questions.questions.length}
+                </div>
+                <div className="progress" style={{ height: '8px' }}>
+                  <div
+                    className="progress-bar"
+                    style={{
+                      width: `${(Object.keys(userAnswers).length / questions.questions.length) * 100}%`,
+                      background: Object.keys(userAnswers).length === questions.questions.length ? '#48bb78' : '#667eea'
+                    }}
+                  />
+                </div>
+                {Object.keys(userAnswers).length >= Math.floor(questions.questions.length / 2) &&
+                  Object.keys(userAnswers).length < questions.questions.length && (
+                  <div style={{ marginTop: '0.5rem', color: '#667eea', fontSize: '0.9rem', fontWeight: '600' }}>
+                    Great progress! Keep going! 💪
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="questions-section">
-              <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3>Question {currentQuestion + 1} of {questions.questions.length}</h3>
-                <button
-                  className="btn btn-success"
-                  onClick={handleSubmit}
-                  disabled={Object.keys(userAnswers).length === 0}
-                >
-                  Submit Test
-                </button>
-              </div>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <h3>📝 Question {currentQuestion + 1} of {questions.questions.length}</h3>
+                  <button
+                    className="btn btn-success"
+                    onClick={handleSubmit}
+                    disabled={Object.keys(userAnswers).length === 0}
+                  >
+                    {Object.keys(userAnswers).length === questions.questions.length ? '✅ Submit Test' : `Submit (${Object.keys(userAnswers).length} answered)`}
+                  </button>
+                </div>
 
-              <div className="progress" style={{ marginBottom: '2rem' }}>
-                <div
-                  className="progress-bar"
-                  style={{ width: `${((currentQuestion + 1) / questions.questions.length) * 100}%` }}
-                />
+                {/* Question navigation dots */}
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                  {questions.questions.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentQuestion(index)}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        border: index === currentQuestion ? '2px solid #667eea' : '1px solid #e2e8f0',
+                        background: userAnswers[index + 1]
+                          ? userAnswers[index + 1].isCorrect ? '#48bb78' : '#f56565'
+                          : index === currentQuestion ? '#667eea' : 'white',
+                        color: userAnswers[index + 1] || index === currentQuestion ? 'white' : '#718096',
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {questions.questions.map((question, index) => (
