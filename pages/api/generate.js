@@ -108,8 +108,23 @@ Return ONLY a valid JSON object (no markdown, no extra text) with this structure
     const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
     const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
 
+    // Log for debugging
+    console.log('Environment check:', {
+      hasOpenAI: !!OPENAI_API_KEY,
+      hasClaude: !!CLAUDE_API_KEY,
+      openAILength: OPENAI_API_KEY ? OPENAI_API_KEY.length : 0,
+      claudeLength: CLAUDE_API_KEY ? CLAUDE_API_KEY.length : 0
+    });
+
     if (!OPENAI_API_KEY && !CLAUDE_API_KEY) {
-      throw new Error('No API keys configured. Please set OPENAI_API_KEY or CLAUDE_API_KEY environment variables.');
+      return res.status(500).json({
+        error: 'Configuration Error',
+        message: 'No API keys found. Please add OPENAI_API_KEY or CLAUDE_API_KEY to Vercel environment variables.',
+        debug: {
+          hasOpenAI: false,
+          hasClaude: false
+        }
+      });
     }
 
     let response;
