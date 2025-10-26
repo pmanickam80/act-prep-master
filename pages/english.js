@@ -7,6 +7,7 @@ import { storage } from '../utils/storage';
 export default function EnglishPractice({ user, globalStats, updateStats }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
   const [questions, setQuestions] = useState(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [userAnswers, setUserAnswers] = useState({});
@@ -41,8 +42,9 @@ export default function EnglishPractice({ user, globalStats, updateStats }) {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const generateQuestions = async () => {
+  const generateQuestions = async (retryCount = 0) => {
     setLoading(true);
+    setLoadingMessage(retryCount > 0 ? `Retrying... (Attempt ${retryCount + 1}/3)` : 'Generating unique questions...');
     setSessionStartTime(new Date());
 
     try {
@@ -59,23 +61,44 @@ export default function EnglishPractice({ user, globalStats, updateStats }) {
       const data = await response.json();
 
       if (data.error) {
+        // If it's a JSON parsing error and we haven't retried yet, try again
+        if (data.message && data.message.includes('JSON') && retryCount < 2) {
+          console.log(`Retrying due to JSON error (attempt ${retryCount + 2}/3)...`);
+          setTimeout(() => generateQuestions(retryCount + 1), 1000);
+          return;
+        }
+
         alert(`Error generating questions: ${data.message || 'Please try again'}`);
         setLoading(false);
         return;
       }
 
-      if (data.passage && data.questions) {
+      if (data.passage && data.questions && data.questions.length > 0) {
         setQuestions(data);
         setCurrentQuestion(0);
         setUserAnswers({});
-      } else {
-        alert('Invalid response format. Please try again.');
         setLoading(false);
+      } else {
+        // Retry if we get an invalid response
+        if (retryCount < 2) {
+          console.log(`Retrying due to invalid response (attempt ${retryCount + 2}/3)...`);
+          setTimeout(() => generateQuestions(retryCount + 1), 1000);
+        } else {
+          alert('Failed to generate valid questions after 3 attempts. Please try again.');
+          setLoading(false);
+        }
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Failed to generate questions. Please check your internet connection and try again.');
-      setLoading(false);
+
+      // Retry on network errors
+      if (retryCount < 2) {
+        console.log(`Retrying due to network error (attempt ${retryCount + 2}/3)...`);
+        setTimeout(() => generateQuestions(retryCount + 1), 2000);
+      } else {
+        alert('Failed to generate questions. Please check your internet connection and try again.');
+        setLoading(false);
+      }
     }
   };
 
@@ -286,8 +309,15 @@ export default function EnglishPractice({ user, globalStats, updateStats }) {
 
             {loading && (
               <div style={{ marginTop: '2rem', color: '#64748b' }}>
-                <p>🔄 Creating unique ACT practice questions tailored for you...</p>
+                <p>🔄 {loadingMessage || 'Creating unique ACT practice questions tailored for you...'}</p>
                 <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>This may take 10-15 seconds</p>
+                <div style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#94a3b8' }}>
+                  <p>✓ Connecting to AI service...</p>
+                  <p>⏳ Generating passage and questions...</p>
+                  {loadingMessage.includes('Retry') && (
+                    <p style={{ color: '#ea580c' }}>⚠️ Previous attempt failed, retrying...</p>
+                  )}
+                </div>
               </div>
             )}
           </div>

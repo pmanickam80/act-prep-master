@@ -134,20 +134,7 @@ Format: <span class="underlined" data-question="1">text</span>`;
 
 IMPORTANT: Be concise and focus on quality.
 
-Return ONLY a valid JSON object (no markdown, no extra text) with this structure:
-{
-  "passage": "Full passage text with <span class='underlined' data-question='1'>underlined portions</span>",
-  "questions": [
-    {
-      "id": 1,
-      "text": "Question about the underlined portion",
-      "options": ["A. NO CHANGE", "B. alternative", "C. alternative", "D. alternative"],
-      "correct": 0,
-      "explanation": "Detailed explanation of why this answer is correct and others are wrong",
-      "skill": "${skills[0] || 'grammar'}"
-    }
-  ]
-}`;
+Return a JSON object with passage and questions array. Each question needs: id, text, options array, correct index, explanation, skill.`;
 
   try {
     // Use OpenAI API as primary (more cost-effective)
@@ -265,15 +252,72 @@ Return ONLY a valid JSON object (no markdown, no extra text) with this structure
     cleanContent = cleanContent.replace(/```json\s*/gi, '');
     cleanContent = cleanContent.replace(/```\s*/gi, '');
 
-    // Find the JSON object
-    const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
-
-    if (!jsonMatch) {
-      console.error('No JSON found in response');
-      throw new Error('Invalid response format');
+    // Remove any text before the first {
+    const jsonStart = cleanContent.indexOf('{');
+    if (jsonStart > 0) {
+      cleanContent = cleanContent.substring(jsonStart);
     }
 
-    const parsedData = JSON.parse(jsonMatch[0]);
+    // Remove any text after the last }
+    const jsonEnd = cleanContent.lastIndexOf('}');
+    if (jsonEnd > -1 && jsonEnd < cleanContent.length - 1) {
+      cleanContent = cleanContent.substring(0, jsonEnd + 1);
+    }
+
+    // Fix common JSON issues
+    cleanContent = cleanContent
+      .replace(/,\s*}/g, '}') // Remove trailing commas before }
+      .replace(/,\s*]/g, ']') // Remove trailing commas before ]
+      .replace(/"\s*:\s*"([^"]*)"([^,}\]])/g, '": "$1"$2') // Fix missing commas after strings
+      .replace(/}\s*{/g, '},{') // Add comma between objects
+      .replace(/]\s*\[/g, '],[') // Add comma between arrays
+      .replace(/\n\s*\n/g, '\n') // Remove extra newlines
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, ''); // Remove control characters
+
+    let parsedData;
+    try {
+      parsedData = JSON.parse(cleanContent);
+    } catch (parseError) {
+      console.error('JSON Parse Error:', parseError.message);
+      console.error('Failed content preview:', cleanContent.substring(0, 500));
+
+      // Try one more aggressive cleanup
+      try {
+        // Extract just the passage and questions manually
+        const passageMatch = cleanContent.match(/"passage"\s*:\s*"([^"]*)"/);
+        const questionsMatch = cleanContent.match(/"questions"\s*:\s*\[([\s\S]*?)\]/);
+
+        if (passageMatch && questionsMatch) {
+          // Attempt to rebuild a simple structure
+          parsedData = {
+            passage: passageMatch[1],
+            questions: []
+          };
+
+          // For now, generate placeholder questions if parsing fails
+          for (let i = 1; i <= numQuestions; i++) {
+            parsedData.questions.push({
+              id: i,
+              text: `Question ${i} about the ${section === 'english' ? 'underlined portion' : 'passage'}`,
+              options: [
+                "A. NO CHANGE",
+                "B. Alternative option 1",
+                "C. Alternative option 2",
+                "D. Alternative option 3"
+              ],
+              correct: 0,
+              explanation: "This is a placeholder question due to generation error. Please try again.",
+              skill: skills[0] || 'general'
+            });
+          }
+        } else {
+          throw new Error('Could not extract passage and questions');
+        }
+      } catch (fallbackError) {
+        console.error('Fallback parsing also failed:', fallbackError);
+        throw new Error('Invalid response format from AI');
+      }
+    }
 
     // Validate the response structure
     if (!parsedData.passage || !Array.isArray(parsedData.questions)) {
