@@ -89,52 +89,34 @@ export default async function handler(req, res) {
   const selectedSkills = skills.map(s => skillDescriptions[s] || s).join(', ');
 
   // Generate section-specific prompt
-  let prompt;
+  let prompt = `Generate an ACT ${section || 'English'} practice test.
 
-  if (section === 'math') {
-    prompt = `Generate ${numQuestions} ACT Math practice questions.
+Topic: ${randomTopic}
+Number of questions: ${numQuestions}
+Skills to test: ${selectedSkills}
 
-SKILLS: ${selectedSkills}
-DIFFICULTY: ${difficulty}
+Instructions:
+1. Create a passage about ${randomTopic} (400-500 words)
+2. For English: Include ${numQuestions} underlined portions using <span class="underlined" data-question="1">text</span>
+3. For other sections: Create a regular passage followed by questions
+4. Generate ${numQuestions} multiple-choice questions
+5. Each question must have 4 options (A, B, C, D)
+6. Include explanations for correct answers
 
-Create ${numQuestions} math problems covering ${selectedSkills}.
-Include step-by-step solutions in explanations.`;
-
-  } else if (section === 'reading') {
-    prompt = `Generate an ACT Reading comprehension passage with ${numQuestions} questions.
-
-TOPIC: ${randomTopic}
-SKILLS: ${selectedSkills}
-DIFFICULTY: ${difficulty}
-
-Create a 500-word passage about ${randomTopic} followed by ${numQuestions} comprehension questions.`;
-
-  } else if (section === 'science') {
-    prompt = `Generate an ACT Science reasoning passage with ${numQuestions} questions.
-
-TOPIC: Scientific experiment or data about ${randomTopic}
-SKILLS: ${selectedSkills}
-DIFFICULTY: ${difficulty}
-
-Create a scientific data passage with graphs/tables about ${randomTopic} followed by ${numQuestions} data interpretation questions.`;
-
-  } else {
-    // Default to English
-    prompt = `Generate an ACT English practice passage with ${numQuestions} questions.
-
-TOPIC: ${randomTopic}
-SKILLS: ${selectedSkills}
-DIFFICULTY: ${difficulty}
-
-Create a 400-word passage about ${randomTopic} with ${numQuestions} underlined portions testing the specified skills.
-Format: <span class="underlined" data-question="1">text</span>`;
-  }
-
-  prompt += `
-
-IMPORTANT: Be concise and focus on quality.
-
-Return a JSON object with passage and questions array. Each question needs: id, text, options array, correct index, explanation, skill.`;
+Return ONLY valid JSON in this exact format:
+{
+  "passage": "Your full passage text here with underlined portions for English section",
+  "questions": [
+    {
+      "id": 1,
+      "text": "What should replace the underlined portion?",
+      "options": ["A. NO CHANGE", "B. option 2", "C. option 3", "D. option 4"],
+      "correct": 0,
+      "explanation": "Explanation here",
+      "skill": "${skills[0] || 'general'}"
+    }
+  ]
+}`;
 
   try {
     // Use OpenAI API as primary (more cost-effective)
@@ -142,11 +124,12 @@ Return a JSON object with passage and questions array. Each question needs: id, 
     const CLAUDE_API_KEY = process.env.CLAUDE_API_KEY;
 
     // Log for debugging
-    console.log('Environment check:', {
+    console.log('API Request:', {
+      section,
+      numQuestions,
+      skills,
       hasOpenAI: !!OPENAI_API_KEY,
-      hasClaude: !!CLAUDE_API_KEY,
-      openAILength: OPENAI_API_KEY ? OPENAI_API_KEY.length : 0,
-      claudeLength: CLAUDE_API_KEY ? CLAUDE_API_KEY.length : 0
+      hasClaude: !!CLAUDE_API_KEY
     });
 
     if (!OPENAI_API_KEY && !CLAUDE_API_KEY) {
@@ -283,36 +266,8 @@ Return a JSON object with passage and questions array. Each question needs: id, 
 
       // Try one more aggressive cleanup
       try {
-        // Extract just the passage and questions manually
-        const passageMatch = cleanContent.match(/"passage"\s*:\s*"([^"]*)"/);
-        const questionsMatch = cleanContent.match(/"questions"\s*:\s*\[([\s\S]*?)\]/);
-
-        if (passageMatch && questionsMatch) {
-          // Attempt to rebuild a simple structure
-          parsedData = {
-            passage: passageMatch[1],
-            questions: []
-          };
-
-          // For now, generate placeholder questions if parsing fails
-          for (let i = 1; i <= numQuestions; i++) {
-            parsedData.questions.push({
-              id: i,
-              text: `Question ${i} about the ${section === 'english' ? 'underlined portion' : 'passage'}`,
-              options: [
-                "A. NO CHANGE",
-                "B. Alternative option 1",
-                "C. Alternative option 2",
-                "D. Alternative option 3"
-              ],
-              correct: 0,
-              explanation: "This is a placeholder question due to generation error. Please try again.",
-              skill: skills[0] || 'general'
-            });
-          }
-        } else {
-          throw new Error('Could not extract passage and questions');
-        }
+        // Don't use placeholder questions - throw error to trigger retry
+        throw new Error('JSON parsing failed - will trigger retry in frontend');
       } catch (fallbackError) {
         console.error('Fallback parsing also failed:', fallbackError);
         throw new Error('Invalid response format from AI');
@@ -324,9 +279,29 @@ Return a JSON object with passage and questions array. Each question needs: id, 
       throw new Error('Invalid response structure');
     }
 
+    // Check for placeholder content (indicates parsing failure)
+    if (parsedData.passage.length < 100 || parsedData.passage === "The") {
+      throw new Error('Invalid passage content - too short or empty');
+    }
+
+    // Check if questions are real, not placeholders
+    if (parsedData.questions[0]?.text?.includes('Question 1 about')) {
+      throw new Error('Placeholder questions detected - regenerating');
+    }
+
+    // Ensure we have the right number of questions
+    if (parsedData.questions.length !== numQuestions) {
+      console.warn(`Expected ${numQuestions} questions but got ${parsedData.questions.length}`);
+      // Continue if we have at least some questions
+      if (parsedData.questions.length === 0) {
+        throw new Error('No questions generated');
+      }
+    }
+
     // Add metadata
     parsedData.topic = randomTopic;
     parsedData.generatedAt = new Date().toISOString();
+    parsedData.section = section;
 
     return res.status(200).json(parsedData);
 
