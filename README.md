@@ -59,8 +59,10 @@ npm install
 3. Set up environment variables:
 Create a `.env.local` file in the root directory:
 ```env
+OPENAI_API_KEY=your_openai_api_key_here
 CLAUDE_API_KEY=your_claude_api_key_here
 ```
+Note: At least one API key is required. OpenAI is recommended for cost-effectiveness.
 
 4. Run the development server:
 ```bash
@@ -84,7 +86,9 @@ git push origin main
 - Go to [vercel.com](https://vercel.com)
 - Click "New Project"
 - Import your GitHub repository
-- Add environment variable: `CLAUDE_API_KEY`
+- Add environment variables:
+  - `OPENAI_API_KEY` (recommended for cost-effectiveness)
+  - `CLAUDE_API_KEY` (optional fallback)
 - Deploy!
 
 ### Manual Deployment
