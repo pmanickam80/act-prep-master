@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { storage } from '../utils/storage';
 
 export default function Home({ user, setUser, globalStats }) {
   const [userName, setUserName] = useState('');
@@ -40,6 +41,8 @@ export default function Home({ user, setUser, globalStats }) {
       };
       setUser(userData);
       localStorage.setItem('actUser', JSON.stringify(userData));
+      // Also save using storage utility for comprehensive tracking
+      storage.saveUser(userData);
     }
   };
 
@@ -259,35 +262,35 @@ export default function Home({ user, setUser, globalStats }) {
             {/* Quick Actions */}
             <div className="grid grid-3" style={{ marginTop: '2rem' }}>
               <div className="card" style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⚡</div>
-                <h4>Quick Quiz</h4>
-                <p style={{ color: '#718096', marginBottom: '1rem' }}>
-                  5-minute practice session
-                </p>
-                <button className="btn btn-primary" onClick={() => router.push('/quick-quiz')}>
-                  Start Quiz
-                </button>
-              </div>
-
-              <div className="card" style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🎯</div>
-                <h4>Full Practice Test</h4>
-                <p style={{ color: '#718096', marginBottom: '1rem' }}>
-                  Complete ACT simulation
-                </p>
-                <button className="btn btn-primary" onClick={() => router.push('/full-test')}>
-                  Take Test
-                </button>
-              </div>
-
-              <div className="card" style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>📊</div>
-                <h4>Review Mistakes</h4>
+                <h4>Your Progress</h4>
                 <p style={{ color: '#718096', marginBottom: '1rem' }}>
-                  Learn from your errors
+                  Track your improvement
                 </p>
-                <button className="btn btn-primary" onClick={() => router.push('/review')}>
-                  Review
+                <button className="btn btn-primary" onClick={() => router.push('/progress')}>
+                  View Progress
+                </button>
+              </div>
+
+              <div className="card" style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>👨‍👩‍👧</div>
+                <h4>Parent Dashboard</h4>
+                <p style={{ color: '#718096', marginBottom: '1rem' }}>
+                  Monitor practice activity
+                </p>
+                <button className="btn btn-primary" onClick={() => router.push('/parent-dashboard')}>
+                  Parent View
+                </button>
+              </div>
+
+              <div className="card" style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⚡</div>
+                <h4>Quick Practice</h4>
+                <p style={{ color: '#718096', marginBottom: '1rem' }}>
+                  5-minute session
+                </p>
+                <button className="btn btn-primary" onClick={() => router.push('/english')}>
+                  Start Now
                 </button>
               </div>
             </div>

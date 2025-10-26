@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { storage } from '../utils/storage';
 
 export default function EnglishPractice({ user, globalStats, updateStats }) {
   const router = useRouter();
@@ -88,14 +89,29 @@ export default function EnglishPractice({ user, globalStats, updateStats }) {
     // Calculate XP earned
     const xpEarned = Math.floor((correctAnswers / totalQuestions) * 50) + 10;
 
-    // Update global stats
-    updateStats({
-      totalQuestions: (globalStats?.totalQuestions || 0) + totalQuestions,
-      correctAnswers: (globalStats?.correctAnswers || 0) + correctAnswers,
-      totalTime: (globalStats?.totalTime || 0) + timeTaken,
-      experience: (globalStats?.experience || 0) + xpEarned,
-      level: Math.floor(((globalStats?.experience || 0) + xpEarned) / 100) + 1
+    // Save practice session to storage
+    storage.savePracticeSession({
+      section: 'english',
+      totalQuestions,
+      correctAnswers,
+      timeTaken,
+      accuracy: (correctAnswers / totalQuestions) * 100,
+      questions: questions.questions,
+      answers: userAnswers,
+      difficulty: 'medium',
+      topic: questions.topic
     });
+
+    // Update global stats
+    if (updateStats) {
+      updateStats({
+        totalQuestions: (globalStats?.totalQuestions || 0) + totalQuestions,
+        correctAnswers: (globalStats?.correctAnswers || 0) + correctAnswers,
+        totalTime: (globalStats?.totalTime || 0) + timeTaken,
+        experience: (globalStats?.experience || 0) + xpEarned,
+        level: Math.floor(((globalStats?.experience || 0) + xpEarned) / 100) + 1
+      });
+    }
 
     setShowResults(true);
     clearInterval(timerRef.current);

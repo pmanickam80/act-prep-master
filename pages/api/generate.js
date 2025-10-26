@@ -70,23 +70,16 @@ export default async function handler(req, res) {
 
   const selectedSkills = skills.map(s => skillDescriptions[s] || s).join(', ');
 
-  const prompt = `Generate a COMPLETELY NEW AND UNIQUE ACT English practice passage with exactly ${numQuestions} questions.
+  const prompt = `Generate an ACT English practice passage with ${numQuestions} questions.
 
 TOPIC: ${randomTopic}
-SKILLS TO TEST: ${selectedSkills}
+SKILLS: ${selectedSkills}
 DIFFICULTY: ${difficulty}
-UNIQUE SEED: ${timestamp}
 
-Requirements:
-1. Create a coherent, engaging passage (450-500 words) about ${randomTopic}
-2. The passage MUST be completely original, detailed, and comprehensive
-3. Include exactly ${numQuestions} numbered underlined portions for questions evenly distributed throughout the passage
-4. Each underlined portion should test the specified skills
-5. Format underlined portions as: <span class="underlined" data-question="1">text here</span>
-6. Create multiple-choice questions with 4 options each (A-D)
-7. Include detailed explanations for correct answers
+Create a 400-word passage about ${randomTopic} with ${numQuestions} underlined portions testing the specified skills.
+Format: <span class="underlined" data-question="1">text</span>
 
-IMPORTANT: Make sure the passage is informative, educational, and follows ACT English test format.
+IMPORTANT: Be concise and focus on quality over length.
 
 Return ONLY a valid JSON object (no markdown, no extra text) with this structure:
 {
@@ -151,8 +144,8 @@ Return ONLY a valid JSON object (no markdown, no extra text) with this structure
                 content: prompt
               }
             ],
-            temperature: 0.9,
-            max_tokens: 3000
+            temperature: 0.7,
+            max_tokens: 2500
           })
         });
 
@@ -176,8 +169,8 @@ Return ONLY a valid JSON object (no markdown, no extra text) with this structure
         },
         body: JSON.stringify({
           model: 'claude-3-haiku-20240307', // Most cost-effective Claude model
-          max_tokens: 4096,
-          temperature: 0.9,
+          max_tokens: 2500,
+          temperature: 0.7,
           messages: [
             {
               role: 'user',
